@@ -1,0 +1,17 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Python test server
+__pycache__/
+
+# Local config (API keys, secrets)
+config.local.js
+
+# Temp files
+*.tmp
+*.swp

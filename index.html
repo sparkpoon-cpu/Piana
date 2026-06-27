@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Piana">
+  <meta name="theme-color" content="#6c5ce7">
+  <meta name="description" content="安徽教招小学美术备考刷题应用">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon-192.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/icon-192.svg">
+  <title>Piana - 教招刷题</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- ==================== 顶部状态栏 ==================== -->
+<header class="app-header">
+  <div class="header-content">
+    <span class="app-logo">P</span>
+    <h1 class="app-title">Piana</h1>
+    <span class="header-subtitle">教招刷题</span>
+  </div>
+</header>
+
+<!-- ==================== 主内容区 ==================== -->
+<main class="app-main">
+
+  <!-- Tab 0: 首页仪表盘 -->
+  <section class="page active" id="page-dashboard" data-page="dashboard">
+    <div class="page-scroll">
+      <!-- 学习进度环 -->
+      <div class="card glass-card progress-card">
+        <div class="progress-ring-container">
+          <svg class="progress-ring" viewBox="0 0 200 200">
+            <circle class="ring-bg" cx="100" cy="100" r="85" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="12"/>
+            <circle class="ring-fill" id="progress-circle" cx="100" cy="100" r="85" fill="none" stroke="url(#ringGrad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="0 534" transform="rotate(-90 100 100)"/>
+            <defs>
+              <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#6c5ce7"/>
+                <stop offset="100%" stop-color="#a29bfe"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="progress-ring-text">
+            <span class="progress-percent" id="today-progress">0%</span>
+            <span class="progress-label">今日进度</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 统计卡片行 -->
+      <div class="stats-row">
+        <div class="card glass-card stat-card">
+          <div class="stat-icon">🔥</div>
+          <div class="stat-value" id="streak-days">0</div>
+          <div class="stat-label">连续打卡</div>
+        </div>
+        <div class="card glass-card stat-card">
+          <div class="stat-icon">📝</div>
+          <div class="stat-value" id="total-questions">0</div>
+          <div class="stat-label">累计做题</div>
+        </div>
+        <div class="card glass-card stat-card">
+          <div class="stat-icon">🎯</div>
+          <div class="stat-value" id="total-accuracy">0%</div>
+          <div class="stat-label">总正确率</div>
+        </div>
+      </div>
+
+      <!-- 薄弱知识点 -->
+      <div class="card glass-card weak-points-card" id="weak-points-card">
+        <h3 class="card-title">⚠️ 薄弱知识点</h3>
+        <div class="weak-points-list" id="weak-points-list">
+          <p class="empty-hint">还没有答题数据，开始训练吧~</p>
+        </div>
+      </div>
+
+      <!-- 开始训练按钮 -->
+      <button class="btn-primary btn-large pulse" id="btn-start-quiz" onclick="app.startQuiz()">
+        <span class="btn-icon">🚀</span> 开始今日训练
+      </button>
+      <button class="btn-secondary" id="btn-start-review" onclick="app.startReview()" style="width:100%;margin-top:10px;">
+        📖 复习待回顾题目
+      </button>
+    </div>
+  </section>
+
+  <!-- Tab 1: 题库管理 -->
+  <section class="page" id="page-bank" data-page="bank">
+    <div class="page-scroll">
+      <!-- 分类筛选 -->
+      <div class="filter-bar">
+        <button class="filter-chip active" data-cat="all" onclick="app.filterQuestions('all')">全部</button>
+        <button class="filter-chip" data-cat="教育学" onclick="app.filterQuestions('教育学')">教育学</button>
+        <button class="filter-chip" data-cat="心理学" onclick="app.filterQuestions('心理学')">心理学</button>
+        <button class="filter-chip" data-cat="美术" onclick="app.filterQuestions('美术')">美术</button>
+      </div>
+
+      <div class="bank-actions">
+        <button class="btn-secondary" onclick="app.showFetchModal()">
+          🌐 联网获取题目
+        </button>
+        <button class="btn-secondary" onclick="app.showUpdateModal()">
+          🔄 更新题库
+        </button>
+        <button class="btn-secondary" onclick="app.showAddQuestionModal()">
+          ✏️ 手动添加
+        </button>
+      </div>
+
+      <!-- 题目列表 -->
+      <div class="question-list" id="question-list">
+        <p class="empty-hint">题库为空，点击上方按钮获取题目</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tab 2: 答题训练 -->
+  <section class="page" id="page-quiz" data-page="quiz">
+    <!-- 训练前配置 -->
+    <div class="quiz-setup" id="quiz-setup">
+      <div class="page-scroll">
+        <h2 class="section-title">⚡ 训练配置</h2>
+        <div class="card glass-card">
+          <label class="form-label">题目数量</label>
+          <div class="chip-group">
+            <button class="filter-chip active" data-count="10" onclick="app.selectQuizCount(10, this)">10题</button>
+            <button class="filter-chip" data-count="20" onclick="app.selectQuizCount(20, this)">20题</button>
+            <button class="filter-chip" data-count="30" onclick="app.selectQuizCount(30, this)">30题</button>
+          </div>
+        </div>
+        <div class="card glass-card">
+          <label class="form-label">题目类型</label>
+          <div class="chip-group">
+            <button class="filter-chip active" data-type="all" onclick="app.selectQuizType('all', this)">混合</button>
+            <button class="filter-chip" data-type="choice" onclick="app.selectQuizType('choice', this)">选择题</button>
+            <button class="filter-chip" data-type="fill" onclick="app.selectQuizType('fill', this)">填空题</button>
+          </div>
+        </div>
+        <div class="card glass-card">
+          <label class="form-label">分类范围</label>
+          <div class="chip-group">
+            <button class="filter-chip active" data-cat="all" onclick="app.selectQuizCat('all', this)">全部</button>
+            <button class="filter-chip" data-cat="教育学" onclick="app.selectQuizCat('教育学', this)">教育学</button>
+            <button class="filter-chip" data-cat="心理学" onclick="app.selectQuizCat('心理学', this)">心理学</button>
+            <button class="filter-chip" data-cat="美术" onclick="app.selectQuizCat('美术', this)">美术</button>
+          </div>
+        </div>
+        <div class="card glass-card">
+          <label class="form-label">🎯 出题模式</label>
+          <div class="chip-group">
+            <button class="filter-chip active" data-mode="smart" onclick="app.selectQuizMode('smart', this)">🧠 智能记忆</button>
+            <button class="filter-chip" data-mode="review" onclick="app.selectQuizMode('review', this)">📖 仅复习</button>
+            <button class="filter-chip" data-mode="random" onclick="app.selectQuizMode('random', this)">🎲 随机刷题</button>
+          </div>
+          <p style="font-size:11px;color:var(--color-text-muted);margin-top:8px;">
+            🧠 智能记忆 = 间隔重复算法，到期题+新题+弱项混合出题<br>
+            📖 仅复习 = 只出待复习和错过的题<br>
+            🎲 随机 = 完全随机抽取
+          </p>
+        </div>
+        <button class="btn-primary btn-large" onclick="app.beginQuiz()">
+          开始答题 🎯
+        </button>
+      </div>
+    </div>
+
+    <!-- 答题中 -->
+    <div class="quiz-active hidden" id="quiz-active">
+      <div class="quiz-header">
+        <div class="quiz-progress-bar">
+          <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+        </div>
+        <div class="quiz-meta">
+          <span id="quiz-counter">1/10</span>
+          <span id="quiz-timer">⏱ 00:00</span>
+        </div>
+      </div>
+      <div class="quiz-content" id="quiz-content">
+        <!-- 动态渲染题目 -->
+      </div>
+    </div>
+
+    <!-- 答题结果 -->
+    <div class="quiz-result hidden" id="quiz-result">
+      <div class="page-scroll">
+        <div class="result-hero">
+          <div class="result-score-circle">
+            <span class="result-score-num" id="result-score">0</span>
+            <span class="result-score-label">分</span>
+          </div>
+          <p class="result-accuracy" id="result-accuracy">正确率 0%</p>
+          <p class="result-time" id="result-time">用时 00:00</p>
+        </div>
+        <div class="card glass-card">
+          <h3 class="card-title">📋 答题回顾</h3>
+          <div class="review-list" id="review-list"></div>
+        </div>
+        <button class="btn-primary btn-large" onclick="app.backToSetup()">再来一轮 🔄</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tab 3: 数据报告 -->
+  <section class="page" id="page-report" data-page="report">
+    <div class="page-scroll">
+      <h2 class="section-title">📊 学习报告</h2>
+
+      <!-- 趋势图 -->
+      <div class="card glass-card">
+        <h3 class="card-title">正确率趋势（近7天）</h3>
+        <canvas id="chart-trend" class="report-chart"></canvas>
+        <p class="empty-hint hidden" id="trend-empty">数据不足，完成更多训练后显示趋势图</p>
+      </div>
+
+      <!-- 分类正确率 -->
+      <div class="card glass-card">
+        <h3 class="card-title">各分类正确率</h3>
+        <div class="category-bars" id="category-bars">
+          <p class="empty-hint">暂无数据</p>
+        </div>
+      </div>
+
+      <!-- 记忆分布 -->
+      <div class="card glass-card">
+        <h3 class="card-title">🧠 记忆分布（间隔重复）</h3>
+        <div class="memory-distribution" id="memory-distribution">
+          <p class="empty-hint">暂无数据</p>
+        </div>
+      </div>
+
+      <!-- 薄弱知识点 -->
+      <div class="card glass-card">
+        <h3 class="card-title">🔍 薄弱知识点 TOP5</h3>
+        <div class="weak-rank" id="weak-rank">
+          <p class="empty-hint">暂无数据</p>
+        </div>
+      </div>
+
+      <!-- AI学习建议 -->
+      <div class="card glass-card suggestion-card">
+        <h3 class="card-title">💡 学习建议</h3>
+        <div class="suggestion-content" id="suggestion-content">
+          <p class="empty-hint">完成更多训练后生成个性化建议</p>
+        </div>
+        <button class="btn-secondary" id="btn-get-suggestion" onclick="app.getAISuggestion()" style="margin-top:12px;width:100%;">
+          🤖 AI生成建议
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tab 4: 设置 -->
+  <section class="page" id="page-settings" data-page="settings">
+    <div class="page-scroll">
+      <h2 class="section-title">⚙️ 设置</h2>
+      <div class="card glass-card">
+        <label class="form-label">🔑 DeepSeek API Key</label>
+        <input type="password" class="form-input" id="setting-apikey" placeholder="sk-..." onchange="app.saveApiKey()">
+        <p class="form-hint">用于联网搜索获取题目，密钥仅存储在本地</p>
+      </div>
+      <div class="card glass-card">
+        <label class="form-label">📅 每日目标题量</label>
+        <select class="form-input" id="setting-daily-goal" onchange="app.saveSetting('dailyGoal', this.value)">
+          <option value="10">10 题/天</option>
+          <option value="20" selected>20 题/天</option>
+          <option value="30">30 题/天</option>
+          <option value="50">50 题/天</option>
+        </select>
+      </div>
+      <div class="card glass-card">
+        <label class="form-label">📋 每轮训练题数</label>
+        <select class="form-input" id="setting-quiz-count" onchange="app.saveSetting('quizCount', this.value)">
+          <option value="10" selected>10 题</option>
+          <option value="20">20 题</option>
+          <option value="30">30 题</option>
+        </select>
+      </div>
+      <div class="card glass-card danger-zone">
+        <h3 class="card-title" style="color:#e74c3c;">⚠️ 危险操作</h3>
+        <button class="btn-danger" onclick="app.clearAllData()">🗑 清除所有数据</button>
+      </div>
+      <p class="app-version">Piana v1.0 · Made with ❤️</p>
+    </div>
+  </section>
+</main>
+
+<!-- ==================== 底部Tab导航 ==================== -->
+<nav class="tab-bar">
+  <button class="tab-btn active" data-tab="dashboard" onclick="app.switchTab('dashboard')">
+    <span class="tab-icon">🏠</span>
+    <span class="tab-label">首页</span>
+  </button>
+  <button class="tab-btn" data-tab="bank" onclick="app.switchTab('bank')">
+    <span class="tab-icon">📚</span>
+    <span class="tab-label">题库</span>
+  </button>
+  <button class="tab-btn" data-tab="quiz" onclick="app.switchTab('quiz')">
+    <span class="tab-icon">✍️</span>
+    <span class="tab-label">训练</span>
+  </button>
+  <button class="tab-btn" data-tab="report" onclick="app.switchTab('report')">
+    <span class="tab-icon">📊</span>
+    <span class="tab-label">报告</span>
+  </button>
+  <button class="tab-btn" data-tab="settings" onclick="app.switchTab('settings')">
+    <span class="tab-icon">⚙️</span>
+    <span class="tab-label">设置</span>
+  </button>
+</nav>
+
+<!-- ==================== Modal容器 ==================== -->
+<div class="modal-overlay hidden" id="modal-overlay">
+  <div class="modal-content" id="modal-content">
+    <!-- 动态填充 -->
+  </div>
+</div>
+
+<!-- Toast容器 -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ==================== Scripts ==================== -->
+<!-- 本地配置（gitignored），存放 API Key 等敏感信息 -->
+<script src="/config.local.js" onerror="console.warn('config.local.js 未找到，请在项目根目录创建该文件')"></script>
+<script src="/js/db.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/quiz.js"></script>
+<script src="/js/report.js"></script>
+<script src="/js/app.js"></script>
+
+</body>
+</html>
